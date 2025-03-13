@@ -1,4 +1,4 @@
-package ca.mcmaster.se2aa4.island.teamXXX;
+package ca.mcmaster.se2aa4.island.team24;
 
 import java.io.StringReader;
 import org.apache.logging.log4j.LogManager;
@@ -7,6 +7,16 @@ import org.apache.logging.log4j.Logger;
 import eu.ace_design.island.bot.IExplorerRaid;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+
+class DetectLand {
+    // Use scanner and radar to analyze oncoming land masses
+    // Determines whether to stop or fly the drone
+    // Holds a parameter to indicate whether to search for creek or emergency site
+}
+
+class Flight {
+    // Fly the drone in path
+}
 
 public class Explorer implements IExplorerRaid {
 
