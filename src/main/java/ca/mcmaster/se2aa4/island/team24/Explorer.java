@@ -1,10 +1,13 @@
 package ca.mcmaster.se2aa4.island.team24;
 
 import java.io.StringReader;
+import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import eu.ace_design.island.bot.IExplorerRaid;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -28,10 +31,12 @@ public class Explorer implements IExplorerRaid {
     private final Logger logger = LogManager.getLogger();
     private boolean hasEchoed = false; // If the drone has used 'ECHO'
     private boolean hasScanned = false; // If the drone has used 'SCAN'
+    private boolean foundGround = false; // If the drone has scanned a piece of land
     private int count = 0;
     private int range = 0; // Range between drone and land tile/out-of-range border
     private Rotate nextRotation = Rotate.CW; // How to turn depending on direction of travel
     private String dir = "E"; // Current direction of drone
+    JSONArray biomes = new JSONArray();
 
     @Override
     public void initialize(String s) {
@@ -48,7 +53,15 @@ public class Explorer implements IExplorerRaid {
     public String takeDecision() {
         JSONObject decision = new JSONObject(); // For the action
         JSONObject parameters = new JSONObject(); // For any actions that include parameters 
-        if (count < 1000) {
+       
+        for (int i = 0; i < biomes.length(); i++) {
+            String biome = biomes.getString(i);
+            if (!biome.equals("OCEAN")) {
+                foundGround = true;
+            }
+        }
+
+        if (!foundGround) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
                 if (range > 1) {
                     decision.put("action", "fly"); // Straight movement
@@ -118,7 +131,9 @@ public class Explorer implements IExplorerRaid {
         if (extraInfo.has("range")) { // Fetches the range if using 'ECHO'
             range = extraInfo.getInt("range");
         }
-        
+        if (extraInfo.has("biomes")) {
+            biomes = extraInfo.getJSONArray("biomes");
+        }
     }
 
     @Override
