@@ -1,7 +1,6 @@
 package ca.mcmaster.se2aa4.island.team24;
 
 import java.io.StringReader;
-import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,12 +30,16 @@ public class Explorer implements IExplorerRaid {
     private final Logger logger = LogManager.getLogger();
     private boolean hasEchoed = false; // If the drone has used 'ECHO'
     private boolean hasScanned = false; // If the drone has used 'SCAN'
-    private boolean foundGround = false; // If the drone has scanned a piece of land
+    private boolean foundCreek = false; // If the drone has scanned a creek
+    private boolean foundSite = false; // If the drone has scanned an emergency site
+    private int currentBattery = 0;
     private int count = 0;
-    private int range = 0; // Range between drone and land tile/out-of-range border
+    private int range = 0; // Max range between drone and out-of-range border
+    private int distanceToEnd = 0; // Variable to check the distance between the drone and the grid border
     private Rotate nextRotation = Rotate.CW; // How to turn depending on direction of travel
     private String dir = "E"; // Current direction of drone
-    JSONArray biomes = new JSONArray();
+    JSONArray creeks = new JSONArray(); // Storage for creeks
+    JSONArray emergencySites = new JSONArray(); // Storage for emergency sites
 
     @Override
     public void initialize(String s) {
@@ -45,6 +48,7 @@ public class Explorer implements IExplorerRaid {
         logger.info("** Initialization info:\n {}",info.toString(2));
         String direction = info.getString("heading");
         Integer batteryLevel = info.getInt("budget");
+        currentBattery = batteryLevel;
         logger.info("The drone is facing {}", direction);
         logger.info("Battery level is {}", batteryLevel);
     }
@@ -53,19 +57,24 @@ public class Explorer implements IExplorerRaid {
     public String takeDecision() {
         JSONObject decision = new JSONObject(); // For the action
         JSONObject parameters = new JSONObject(); // For any actions that include parameters 
-       
-        for (int i = 0; i < biomes.length(); i++) {
-            String biome = biomes.getString(i);
-            if (!biome.equals("OCEAN")) {
-                foundGround = true;
-            }
+        
+        if (currentBattery <= 10) {
+            decision.put("action", "stop");
         }
 
-        if (!foundGround) {
+        if (creeks.length() > 0 && !foundCreek) {
+            foundCreek = true;
+        }
+
+        if (emergencySites.length() > 0 && !foundSite) {
+            foundSite = true;
+        }
+
+        if (!foundCreek || !foundSite) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
-                if (range > 1) {
+                if (distanceToEnd > 1) {
                     decision.put("action", "fly"); // Straight movement
-                    range--;
+                    distanceToEnd--;
                 }
                 else {
                     decision.put("action", "heading");
@@ -78,7 +87,7 @@ public class Explorer implements IExplorerRaid {
                             parameters.put("direction", "W");
                             dir = "W";
                             nextRotation = Rotate.CCW;
-                            hasEchoed = false;
+                            distanceToEnd = range - 1;
                         }
                     }
                     else { // Counter-clockwise Turn (West to East)
@@ -90,7 +99,7 @@ public class Explorer implements IExplorerRaid {
                             parameters.put("direction", "E");
                             dir = "E";
                             nextRotation = Rotate.CW;
-                            hasEchoed = false;
+                            distanceToEnd = range - 1;
                         }
                     }
                     decision.put("parameters", parameters);
@@ -123,16 +132,22 @@ public class Explorer implements IExplorerRaid {
         JSONObject response = new JSONObject(new JSONTokener(new StringReader(s)));
         logger.info("** Response received:\n"+response.toString(2));
         Integer cost = response.getInt("cost");
+        currentBattery -= cost; // Recalculates the current battery
         logger.info("The cost of the action was {}", cost);
+        logger.info("The remaining battery of the drone is {}", currentBattery);
         String status = response.getString("status");
         logger.info("The status of the drone is {}", status);
         JSONObject extraInfo = response.getJSONObject("extras");
         logger.info("Additional information received: {}", extraInfo);
         if (extraInfo.has("range")) { // Fetches the range if using 'ECHO'
             range = extraInfo.getInt("range");
+            distanceToEnd = range;
         }
-        if (extraInfo.has("biomes")) {
-            biomes = extraInfo.getJSONArray("biomes");
+        if (extraInfo.has("creeks")) {
+            creeks = extraInfo.getJSONArray("creeks");
+        }
+        if (extraInfo.has("sites")) {
+            emergencySites = extraInfo.getJSONArray("sites");
         }
     }
 
