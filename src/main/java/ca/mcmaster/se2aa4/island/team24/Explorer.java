@@ -80,7 +80,7 @@ public class Explorer implements IExplorerRaid {
             sitePos.y = currentPos.y; 
         }
 
-        if ((!foundCreek || !foundSite) && currentBattery > 100) {
+        if ((!foundCreek || !foundSite) && currentBattery > 25) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
                 if (distanceToEnd > 1) {
                     decision.put("action", "fly"); // Straight movement
@@ -189,13 +189,13 @@ public class Explorer implements IExplorerRaid {
         if (creeks.length() > 0) {
             logger.info("The located creek identifier is: " + creeks.getString(0));
         } else {
-            logger.info("No creek found.");
+            logger.info("Creek could not be found.");
         }
         
         if (emergencySites.length() > 0) {
             logger.info("The located emergency site identifier is: " + emergencySites.getString(0));
         } else {
-            logger.info("No emergency site found.");
+            logger.info("Emergency site could not be found.");
         }
        
         return "report printed";
