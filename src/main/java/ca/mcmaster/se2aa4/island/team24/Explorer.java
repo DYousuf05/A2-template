@@ -10,20 +10,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-class LandCell {
-    public int x = 0;
-    public int y = 0;
-}
-
-class Flight {
-    // Fly the drone in path
-}
-
-enum Rotate {
-    CW, // Clockwise
-    CCW // Counter-clockwise
-}
-
 public class Explorer implements IExplorerRaid {
 
     private final Logger logger = LogManager.getLogger();
@@ -34,6 +20,7 @@ public class Explorer implements IExplorerRaid {
     private boolean foundSite = false; // If the drone has scanned an emergency site
     
     private LandCell currentPos;
+    private LandCell[] creekcords = new LandCell[10];//keeps track of creeks for closest one calculation
     private LandCell creekPos;
     private LandCell sitePos;
 
@@ -94,7 +81,7 @@ public class Explorer implements IExplorerRaid {
                 }
                 else {
                     decision.put("action", "heading");
-                    if (nextRotation == Rotate.CW) { // Clockwise turn (East-to-West)
+                    if (nextRotation == Rotate.CW) { // Clockwise turn (East-to-South)
                         if (dir.equals("E")) {
                             parameters.put("direction", "S");
                             dir = "S";
@@ -140,7 +127,7 @@ public class Explorer implements IExplorerRaid {
             }
         }
         else {
-            finalDistance = Math.sqrt(Math.pow(sitePos.x - creekPos.x, 2) + Math.pow(sitePos.y - creekPos.y, 2));
+            // finalDistance = Math.sqrt(Math.pow(sitePos.x - creekPos.x, 2) + Math.pow(sitePos.y - creekPos.y, 2));
             decision.put("action", "stop");
         }
         logger.info("** Decision: {}",decision.toString());
