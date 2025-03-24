@@ -20,7 +20,7 @@ public class Explorer implements IExplorerRaid {
     private boolean foundSite = false; // If the drone has scanned an emergency site
     
     private LandCell currentPos;
-    private LandCell[] creekcords = new LandCell[10];//keeps track of creeks for closest one calculation
+    private Creek[] creekcords = new Creek[10];//keeps track of creeks for closest one calculation
     private LandCell creekPos;
     private LandCell sitePos;
 
@@ -38,8 +38,8 @@ public class Explorer implements IExplorerRaid {
         currentPos = new LandCell();
         creekPos = new LandCell();
         sitePos = new LandCell();
-        currentPos.x = 1;
-        currentPos.y = 1;
+        currentPos.setX(1);
+        currentPos.setY(1);
         logger.info("** Initializing the Exploration Command Center");
         JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
         logger.info("** Initialization info:\n {}",info.toString(2));
@@ -57,26 +57,26 @@ public class Explorer implements IExplorerRaid {
         
         if (creeks.length() > 0 && !foundCreek) {
             foundCreek = true;
-            creekPos.x = currentPos.x; 
-            creekPos.y = currentPos.y; 
+            creekPos.setX(currentPos.getX());
+            creekPos.setY(currentPos.getY());
         }
 
         if (emergencySites.length() > 0 && !foundSite) {
             foundSite = true;
-            sitePos.x = currentPos.x; 
-            sitePos.y = currentPos.y; 
+            sitePos.setX(currentPos.getX());
+            sitePos.setY(currentPos.getY());
         }
 
-        if (!foundSite && currentBattery > 25) {
+        if (currentBattery > 25) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
                 if (distanceToEnd > 1) {
                     decision.put("action", "fly"); // Straight movement
                     distanceToEnd--;
                     if (dir.equals("E")) {
-                        currentPos.x++;
+                        currentPos.setX(currentPos.getX()+1);
                     }
                     else {
-                        currentPos.x--;
+                        currentPos.setX(currentPos.getX()-1);
                     }
                 }
                 else {
@@ -85,28 +85,28 @@ public class Explorer implements IExplorerRaid {
                         if (dir.equals("E")) {
                             parameters.put("direction", "S");
                             dir = "S";
-                            currentPos.y++;
+                            currentPos.setY(currentPos.getY()+1);;
                         }
                         else if (dir.equals("S")) {
                             parameters.put("direction", "W");
                             dir = "W";
                             nextRotation = Rotate.CCW;
                             distanceToEnd = range - 1;
-                            currentPos.x--;
+                            currentPos.setX(currentPos.getX()-1);
                         }
                     }
                     else { // Counter-clockwise Turn (West to East)
                         if (dir.equals("W")) {
                             parameters.put("direction", "S");
                             dir = "S";
-                            currentPos.y++;
+                            currentPos.setY(currentPos.getY()+1);;
                         }
                         else if (dir.equals("S")) {
                             parameters.put("direction", "E");
                             dir = "E";
                             nextRotation = Rotate.CW;
                             distanceToEnd = range - 1;
-                            currentPos.x++;
+                            currentPos.setX(currentPos.getX()+1);;
                         }
                     }
                     decision.put("parameters", parameters);
@@ -127,7 +127,10 @@ public class Explorer implements IExplorerRaid {
             }
         }
         else {
-            finalDistance = Math.sqrt(Math.pow(sitePos.x - creekPos.x, 2) + Math.pow(sitePos.y - creekPos.y, 2));
+            if (foundCreek && foundSite) {
+                finalDistance = findShortest();
+            }
+            // finalDistance = Math.sqrt(Math.pow(sitePos.getX() - creekPos.getX(), 2) + Math.pow(sitePos.getY() - creekPos.getY(), 2));
             decision.put("action", "stop");
         }
         logger.info("** Decision: {}",decision.toString());
@@ -150,15 +153,19 @@ public class Explorer implements IExplorerRaid {
             range = extraInfo.getInt("range");
             distanceToEnd = range;
         }
-        if (extraInfo.has("creeks")) {
+        if (extraInfo.has("creeks") && extraInfo.getJSONArray("creeks").length()>0) {
+            String identifier = extraInfo.getJSONArray("creeks").getString(0);
+            int creek_index = creeks.length();
             if (creeks.length() == 0) {
                 creeks = extraInfo.getJSONArray("creeks");
             } else {
-                if (extraInfo.getJSONArray("creeks").length()>0)
-                creeks.put(extraInfo.getJSONArray("creeks").getJSONObject(0));
+                creeks.put(identifier);
             }
+            creekcords[creek_index] = new Creek(identifier);
+            creekcords[creek_index].setX(creekPos.getX());
+            creekcords[creek_index].setY(creekPos.getY());
         }
-        if (extraInfo.has("sites")) {
+        if (extraInfo.has("sites") && emergencySites.length()==0) {
             emergencySites = extraInfo.getJSONArray("sites");
         }
     }
@@ -166,7 +173,6 @@ public class Explorer implements IExplorerRaid {
     @Override
     public String deliverFinalReport() {
         logger.info("***** FINAL REPORT *****");
-
         if (creeks.length() > 0 && emergencySites.length() > 0) {
             logger.info("Final Status: Creek and Emergency Site located. Distance calculated.");
             logger.info("The distance between the 2 sites is: " + finalDistance);
@@ -190,5 +196,16 @@ public class Explorer implements IExplorerRaid {
        
         return "report printed";
     }
-
+    public double findShortest(){
+        double min = Math.sqrt(Math.pow(sitePos.getX() - creekcords[0].getX(), 2) + Math.pow(sitePos.getY() - creekcords[0].getY(), 2));
+        logger.info("min value: "+ min);
+        for (int i = 1; creekcords[i] != null; i++) {
+            Creek candidate = creekcords[i];
+            double temp_calc = Math.sqrt(Math.pow(sitePos.getX() - candidate.getX(), 2) + Math.pow(sitePos.getY() - candidate.getY(), 2));
+            if (temp_calc < min) {
+                min = temp_calc;
+            }
+        }
+        return min;
+    }
 }
