@@ -67,7 +67,7 @@ public class Explorer implements IExplorerRaid {
             sitePos.y = currentPos.y; 
         }
 
-        if ((!foundCreek || !foundSite) && currentBattery > 25) {
+        if (!foundSite && currentBattery > 25) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
                 if (distanceToEnd > 1) {
                     decision.put("action", "fly"); // Straight movement
@@ -127,7 +127,7 @@ public class Explorer implements IExplorerRaid {
             }
         }
         else {
-            // finalDistance = Math.sqrt(Math.pow(sitePos.x - creekPos.x, 2) + Math.pow(sitePos.y - creekPos.y, 2));
+            finalDistance = Math.sqrt(Math.pow(sitePos.x - creekPos.x, 2) + Math.pow(sitePos.y - creekPos.y, 2));
             decision.put("action", "stop");
         }
         logger.info("** Decision: {}",decision.toString());
@@ -153,6 +153,9 @@ public class Explorer implements IExplorerRaid {
         if (extraInfo.has("creeks")) {
             if (creeks.length() == 0) {
                 creeks = extraInfo.getJSONArray("creeks");
+            } else {
+                if (extraInfo.getJSONArray("creeks").length()>0)
+                creeks.put(extraInfo.getJSONArray("creeks").getJSONObject(0));
             }
         }
         if (extraInfo.has("sites")) {
