@@ -29,7 +29,7 @@ public class Explorer implements IExplorerRaid {
     private int range = 0; // Max range between drone and out-of-range border
     private int distanceToEnd = 0; // Variable to check the distance between the drone and the grid border
     private Rotate nextRotation = Rotate.CW; // How to turn depending on direction of travel
-    private String dir = "E"; // Current direction of drone
+    private Direction dir = Direction.E; // Current direction of drone
     JSONArray creeks = new JSONArray(); // Storage for creeks
     JSONArray emergencySites = new JSONArray(); // Storage for emergency sites
 
@@ -67,12 +67,12 @@ public class Explorer implements IExplorerRaid {
             sitePos.setY(currentPos.getY());
         }
 
-        if (currentBattery > 25) {
+        if (currentBattery > 35) {
             if (hasEchoed && hasScanned) { // Checks if 'ECHO' and 'SCAN' have been executed
                 if (distanceToEnd > 1) {
                     decision.put("action", "fly"); // Straight movement
                     distanceToEnd--;
-                    if (dir.equals("E")) {
+                    if (dir == Direction.E) {
                         currentPos.setX(currentPos.getX()+1);
                     }
                     else {
@@ -82,28 +82,28 @@ public class Explorer implements IExplorerRaid {
                 else {
                     decision.put("action", "heading");
                     if (nextRotation == Rotate.CW) { // Clockwise turn (East-to-South)
-                        if (dir.equals("E")) {
+                        if (dir == Direction.E) {
                             parameters.put("direction", "S");
-                            dir = "S";
+                            dir = Direction.S;
                             currentPos.setY(currentPos.getY()+1);;
                         }
-                        else if (dir.equals("S")) {
+                        else if (dir == Direction.S) {
                             parameters.put("direction", "W");
-                            dir = "W";
+                            dir = Direction.W;
                             nextRotation = Rotate.CCW;
                             distanceToEnd = range - 1;
                             currentPos.setX(currentPos.getX()-1);
                         }
                     }
                     else { // Counter-clockwise Turn (West to East)
-                        if (dir.equals("W")) {
+                        if (dir == Direction.W) {
                             parameters.put("direction", "S");
-                            dir = "S";
+                            dir = Direction.S;
                             currentPos.setY(currentPos.getY()+1);;
                         }
-                        else if (dir.equals("S")) {
+                        else if (dir == Direction.S) {
                             parameters.put("direction", "E");
-                            dir = "E";
+                            dir = Direction.E;
                             nextRotation = Rotate.CW;
                             distanceToEnd = range - 1;
                             currentPos.setX(currentPos.getX()+1);;
@@ -115,7 +115,7 @@ public class Explorer implements IExplorerRaid {
             }
             else {
                 if (!hasEchoed) { // 'ECHO' if not done already
-                    parameters.put("direction", dir);
+                    parameters.put("direction", dir.name());
                     decision.put("action", "echo");
                     decision.put("parameters", parameters);
                     hasEchoed = true;
@@ -175,11 +175,11 @@ public class Explorer implements IExplorerRaid {
         logger.info("***** FINAL REPORT *****");
         if (creeks.length() > 0 && emergencySites.length() > 0) {
             logger.info("Final Status: Creek and Emergency Site located. Distance calculated.");
-            logger.info("The distance between the 2 sites is: " + finalDistance);
+            logger.info("The distance from the nearest creek to the emergency site is: " + finalDistance);
         }
         else {
             logger.info("Final Status: Drone battery at critical level, returned to home to prevent MIA.");
-            logger.info("The distance between the 2 sites is: N/A");
+            logger.info("The distance from the nearest creek to the emergency site is: N/A");
         }
 
         if (creeks.length() > 0) {
